@@ -1,5 +1,6 @@
 import os
 import re
+import asyncio
 from datetime import datetime, time, timedelta
 
 from flask import Flask, request
@@ -77,14 +78,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         print("Delete error:", e)
 
 
-@app.post(f"/webhook/{os.getenv('BOT_TOKEN', '')}")
-async def telegram_webhook():
+@app.route(f"/webhook/{os.getenv('BOT_TOKEN', '')}", methods=["POST"])
+def telegram_webhook():
     """
     This endpoint receives updates from Telegram via webhook.
     """
     data = request.get_json(force=True)
     update = Update.de_json(data, application.bot)
-    await application.process_update(update)
+    asyncio.run(application.process_update(update))
     return "OK", 200
 
 
