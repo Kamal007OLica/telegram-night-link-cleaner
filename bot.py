@@ -1,9 +1,6 @@
 import os
 import re
-import asyncio
 from datetime import datetime, time, timedelta
-
-from flask import Flask, request
 
 from telegram import Update
 from telegram.ext import (
@@ -17,11 +14,6 @@ from telegram.ext import (
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 if not BOT_TOKEN:
     raise RuntimeError("BOT_TOKEN environment variable is not set")
-
-app = Flask(__name__)
-
-# Build the telegram application
-application = Application.builder().token(BOT_TOKEN).build()
 
 # Simple URL regex
 URL_REGEX = re.compile(
@@ -78,28 +70,15 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         print("Delete error:", e)
 
 
-@app.route(f"/webhook/{os.getenv('BOT_TOKEN', '')}", methods=["POST"])
-def telegram_webhook():
-    """
-    This endpoint receives updates from Telegram via webhook.
-    """
-    data = request.get_json(force=True)
-    update = Update.de_json(data, application.bot)
-    asyncio.run(application.process_update(update))
-    return "OK", 200
-
-
-@app.get("/")
-def index():
-    return "Bot is running"
-
-
-def setup_application():
+def main():
+    application = Application.builder().token(BOT_TOKEN).build()
+    
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    
+    # Start polling (simpler, no webhook needed)
+    application.run_polling()
 
 
 if __name__ == "__main__":
-    # Local testing with polling
-    setup_application()
-    application.run_polling()
+    main()
